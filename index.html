@@ -8,35 +8,26 @@
     <style>
         :root { --cyber-blue: #00b4d8; --cyber-dark: #03045e; --dark-bg: #0b0f19; --panel-bg: #1a2235; --text-light: #caf0f8; --alert-red: #d90429; --focus-orange: #f77f00; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--dark-bg); color: var(--text-light); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Sidebar */
         .sidebar { width: 320px; background-color: var(--panel-bg); border-right: 2px solid var(--cyber-blue); padding: 20px; overflow-y: auto; }
         .guard-item { background: rgba(0,0,0,0.3); padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--cyber-blue); cursor: pointer; transition: 0.3s; }
         .guard-item:hover { background: rgba(0, 180, 216, 0.2); }
         .guard-name { font-weight: bold; font-size: 1.1em; color: white; }
-        
-        /* Main Content */
         .main-content { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         h2 { color: var(--cyber-blue); margin-top: 0; border-bottom: 1px solid var(--cyber-dark); padding-bottom: 10px; }
         .card { background-color: var(--panel-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--cyber-dark); margin-bottom: 15px; }
-        
-        /* Top Row: Gyro & Info */
         .top-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .gyro-container { display: flex; justify-content: space-between; background: black; padding: 15px; border-radius: 5px; border: 1px solid var(--cyber-blue); font-family: monospace; font-size: 1.5em; color: #00ff00; text-align: center; }
-        .gyro-box { flex: 1; }
-        
-        /* Timeline */
-        .timeline { max-height: 200px; overflow-y: auto; border-left: 2px solid var(--cyber-blue); margin-left: 10px; padding-left: 15px; }
+        .telemetry-section { margin-bottom: 10px; }
+        .telemetry-title { font-size: 0.8em; color: var(--text-light); margin-bottom: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .telemetry-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .t-box { background: black; padding: 8px; border-radius: 4px; border: 1px solid var(--cyber-blue); font-family: monospace; color: #00ff00; text-align: center; font-size: 1.2em; }
+        .t-label { color: #888; font-size: 0.6em; display: block; }
+        .timeline { max-height: 180px; overflow-y: auto; border-left: 2px solid var(--cyber-blue); margin-left: 10px; padding-left: 15px; }
         .time-item { margin-bottom: 10px; font-size: 0.95em; position: relative; }
         .time-item::before { content: ''; position: absolute; left: -21px; top: 4px; width: 10px; height: 10px; background: var(--focus-orange); border-radius: 50%; }
         .time-stamp { color: #888; font-size: 0.85em; margin-right: 10px; }
         .tag { background: rgba(0, 180, 216, 0.2); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--cyber-blue); color: white; }
-        
-        /* Grid for Chart & Checkboxes */
         .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         canvas { max-height: 250px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.9em; }
-        .info-grid span { color: var(--cyber-blue); }
     </style>
 </head>
 <body>
@@ -51,24 +42,31 @@
         
         <div class="top-row">
             <div class="card">
-                <h3 style="margin-top: 0;">Live Gyro Stream</h3>
-                <div class="gyro-container">
-                    <div class="gyro-box">X<br><span id="gx">0.00</span></div>
-                    <div class="gyro-box">Y<br><span id="gy">0.00</span></div>
-                    <div class="gyro-box">Z<br><span id="gz">0.00</span></div>
+                <h3 style="margin-top: 0; margin-bottom: 15px;">100Hz Buffered Telemetry</h3>
+                
+                <div class="telemetry-section">
+                    <div class="telemetry-title">Accelerometer (m/s²)</div>
+                    <div class="telemetry-grid">
+                        <div class="t-box"><span class="t-label">X-AXIS</span><span id="ax">0.00</span></div>
+                        <div class="t-box"><span class="t-label">Y-AXIS</span><span id="ay">0.00</span></div>
+                        <div class="t-box"><span class="t-label">Z-AXIS</span><span id="az">0.00</span></div>
+                    </div>
+                </div>
+
+                <div class="telemetry-section">
+                    <div class="telemetry-title">Gyroscope (deg/s)</div>
+                    <div class="telemetry-grid">
+                        <div class="t-box"><span class="t-label">PITCH</span><span id="gx">0.0</span></div>
+                        <div class="t-box"><span class="t-label">ROLL</span><span id="gy">0.0</span></div>
+                        <div class="t-box"><span class="t-label">YAW</span><span id="gz">0.0</span></div>
+                    </div>
                 </div>
             </div>
             
             <div class="card">
-                <h3 style="margin-top: 0;">Operative Profile</h3>
-                <div class="info-grid" id="guard-info"></div>
+                <h3 style="margin-top: 0;">Movement Status Timeline</h3>
+                <div class="timeline" id="timeline-container"></div>
             </div>
-        </div>
-
-        <div class="card">
-            <h3 style="margin-top: 0;">Movement Status Timeline</h3>
-            <div class="timeline" id="timeline-container">
-                </div>
         </div>
 
         <div class="bottom-grid">
@@ -84,7 +82,6 @@
                     <label><input type="checkbox" checked> Sleeping</label>
                     <label><input type="checkbox"> Driving</label>
                     <label><input type="checkbox"> Idle / Sitting</label>
-                    <label><input type="checkbox"> Talking</label>
                 </div>
             </div>
         </div>
@@ -99,9 +96,7 @@
             authDomain: "focushls-live.firebaseapp.com",
             databaseURL: "https://focushls-live-default-rtdb.firebaseio.com",
             projectId: "focushls-live",
-            storageBucket: "focushls-live.firebasestorage.app",
-            messagingSenderId: "155686668050",
-            appId: "1:155686668050:web:ec06db6910733f53bad5cb"
+            storageBucket: "focushls-live.firebasestorage.app"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -109,18 +104,20 @@
         
         let chartInstance = null;
         let globalData = {};
-        
-        // Track local history for timeline and chart
         let currentViewedGuard = null;
         let lastKnownStatus = "";
         let statusCounts = {};
+
+        // PLAYBACK ENGINE VARIABLES
+        let playbackQueue = [];
+        let playbackInterval = null;
 
         // Listen for ANY changes
         onValue(ref(database, 'active_shifts'), (snapshot) => {
             globalData = snapshot.val() || {};
             renderSidebar();
             if(currentViewedGuard && globalData[currentViewedGuard]) {
-                updateDashboard(globalData[currentViewedGuard]);
+                processGuardUpdate(globalData[currentViewedGuard]);
             }
         });
 
@@ -142,46 +139,54 @@
             document.getElementById('dashboard').style.display = 'flex';
             document.getElementById('dash-title').innerText = `${guardName} - Live Telemetry`;
             
-            // Reset history when switching guards
             document.getElementById('timeline-container').innerHTML = '';
             lastKnownStatus = "";
             statusCounts = {};
+            playbackQueue = []; // Clear queue when switching guards
             
-            updateDashboard(globalData[guardName]);
+            startPlaybackLoop();
+            processGuardUpdate(globalData[guardName]);
         }
 
-        function updateDashboard(data) {
+        function processGuardUpdate(data) {
             if(!data) return;
 
-            // 1. Update Profile Info
-            const info = data.info || {};
-            document.getElementById('guard-info').innerHTML = `
-                <div><span>Tag:</span> ${info.tag || 'N/A'}</div>
-                <div><span>Blood Type:</span> ${info.bloodType || 'N/A'}</div>
-                <div><span>Emergency:</span> ${info.emergencyContact || 'N/A'}</div>
-                <div><span>Supervisor:</span> ${info.supervisor || 'N/A'}</div>
-            `;
-
-            // 2. Update Live Gyro Stream
-            if(data.gyro) {
-                document.getElementById('gx').innerText = data.gyro.x;
-                document.getElementById('gy').innerText = data.gyro.y;
-                document.getElementById('gz').innerText = data.gyro.z;
+            // 1. Add new batch of 300 frames (3 seconds) to our playback queue
+            if(data.batched_telemetry) {
+                playbackQueue = playbackQueue.concat(data.batched_telemetry);
+                // Expand memory cap to 900 (9 seconds of buffer) to account for 3-second network delays
+                if(playbackQueue.length > 900) playbackQueue = playbackQueue.slice(-900);
             }
 
-            // 3. Update Timeline & Chart (Only if status changed)
+            // 2. Update Timeline & Chart
             if(data.status && data.status !== lastKnownStatus && data.status !== "Offline") {
                 lastKnownStatus = data.status;
-                
-                // Add to Timeline
                 const timeStr = new Date().toLocaleTimeString();
                 const timelineHtml = `<div class="time-item"><span class="time-stamp">${timeStr}</span> <span class="tag">${data.status}</span></div>`;
                 document.getElementById('timeline-container').insertAdjacentHTML('afterbegin', timelineHtml);
 
-                // Update Chart Data
                 statusCounts[data.status] = (statusCounts[data.status] || 0) + 1;
                 renderChart();
             }
+        }
+
+        // PLAYBACK ENGINE: Renders frames locally at high speed
+        function startPlaybackLoop() {
+            if(playbackInterval) clearInterval(playbackInterval);
+            
+            playbackInterval = setInterval(() => {
+                if(playbackQueue.length > 0) {
+                    // Pull the oldest frame from the queue
+                    const frame = playbackQueue.shift();
+                    
+                    document.getElementById('ax').innerText = frame.ax;
+                    document.getElementById('ay').innerText = frame.ay;
+                    document.getElementById('az').innerText = frame.az;
+                    document.getElementById('gx').innerText = frame.gx;
+                    document.getElementById('gy').innerText = frame.gy;
+                    document.getElementById('gz').innerText = frame.gz;
+                }
+            }, 10); // Playback at 10ms intervals (100Hz)
         }
 
         function renderChart() {
